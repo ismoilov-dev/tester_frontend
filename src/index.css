@@ -1,0 +1,74 @@
+@import "tailwindcss";
+
+/* ---- Lumen dizayn tizimi tokenlari (light) ---- */
+:root {
+  --bg: #ffffff;
+  --surface-100: #f6f6f7;
+  --surface-200: #eeeef0;
+  --border: #e7e7ea;
+  --border-strong: #d1d1d6;
+  --ink: #0b0b0c;
+  --ink-muted: #5d5d68;
+  --ink-subtle: #757580;
+  --primary: #0b0b0c;
+  --primary-hover: #2a2a2e;
+  --on-primary: #ffffff;
+  --tint-peach: #ffd9c4;
+  --tint-blush: #ffd6e5;
+  --tint-lilac: #e3dcff;
+  --tint-sky: #cfe5ff;
+  --tint-mint: #d2f2e4;
+  --success: #157f4c;
+  --warning: #985600;
+  --danger: #c4323a;
+  --focus: rgba(11, 11, 12, 0.16);
+  --shadow-sm: 0 1px 2px rgba(11, 11, 12, 0.05);
+  --shadow-md: 0 8px 24px -6px rgba(11, 11, 12, 0.08);
+  --shadow-lg: 0 24px 56px -16px rgba(11, 11, 12, 0.14);
+}
+
+/* Tailwind klasslari tokenlarga bog'lanadi: bg-surface-100, text-ink-muted, border-border, rounded-xl ... */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface-100: var(--surface-100);
+  --color-surface-200: var(--surface-200);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-subtle: var(--ink-subtle);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-on-primary: var(--on-primary);
+  --color-peach: var(--tint-peach);
+  --color-blush: var(--tint-blush);
+  --color-lilac: var(--tint-lilac);
+  --color-sky: var(--tint-sky);
+  --color-mint: var(--tint-mint);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+
+  --font-sans: Inter, system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+}
+
+@layer base {
+  body { @apply bg-bg font-sans text-[15px] leading-6 text-ink antialiased; }
+  :focus-visible { outline: none; box-shadow: 0 0 0 3px var(--focus); }
+}
+
+@utility gradient-aurora { background: linear-gradient(135deg, var(--tint-peach), var(--tint-lilac) 50%, var(--tint-sky)); }
+@utility gradient-sunset { background: linear-gradient(135deg, var(--tint-blush), var(--tint-peach)); }
+@utility gradient-lagoon { background: linear-gradient(135deg, var(--tint-mint), var(--tint-sky)); }
+
+.no-select { user-select: none; -webkit-user-select: none; }
