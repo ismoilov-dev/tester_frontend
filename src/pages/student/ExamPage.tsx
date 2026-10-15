@@ -190,7 +190,7 @@ export default function ExamPage({ onVideo, media, fullscreenLost, onFullscreenR
           <span className="text-sm text-ink-muted"><b className="font-semibold text-ink">{question.index + 1}</b> / {question.total}</span>
           <div className="ml-auto flex items-center gap-3">
             <ViolationBar score={violationScore} freezeAt={state.freeze_at} warnAt={state.warn_at} />
-            <Timer deadline={question.deadline} onExpire={onExpire} />
+            <Timer deadline={question.deadline} onExpire={onExpire} dangerSec={totalMode ? 60 : 10} />
             {(cfg.camera || cfg.microphone) && <LiveIndicator camera={cfg.camera} microphone={cfg.microphone} />}
             {cfg.camera && (
               <video ref={setVideo} autoPlay muted playsInline

@@ -54,13 +54,13 @@ export default function QuestionsPage() {
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <SortableContext items={exam.questions.map(x => x.id)} strategy={verticalListSortingStrategy}>
           {exam.questions.map((qq, i) => (
-            <QuestionCard key={qq.id} examId={exam.id} index={i} question={qq} timingMode={exam.timing_mode}
+            <QuestionCard key={qq.id} examId={exam.id} index={i} question={qq}
               readOnly={readOnly} serverErrors={pubErrors?.byId[qq.id]} onSaved={refetch} />
           ))}
         </SortableContext>
       </DndContext>
       {adding && (
-        <QuestionCard examId={exam.id} index={exam.questions.length} question={null} timingMode={exam.timing_mode}
+        <QuestionCard examId={exam.id} index={exam.questions.length} question={null}
           readOnly={false} onSaved={() => { setAdding(false); refetch(); }} onCancelNew={() => setAdding(false)} />
       )}
       {!readOnly && !adding && (

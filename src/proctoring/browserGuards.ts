@@ -24,14 +24,16 @@ export function installBrowserGuards({ config, emit, onFullscreenChange }: Guard
   }, opt);
 
   // blur va tab_hidden 1 s ichida kelsa — faqat tab_hidden
-  window.addEventListener("blur", () => {
+  // capture'siz: aks holda har bir element blur'i (savol almashishi, disabled tugma) ham shu yerga keladi
+  window.addEventListener("blur", e => {
+    if (e.target !== window) return;
     const at = Date.now();
     setTimeout(() => {
       if (ac.signal.aborted) return;
-      if (Math.abs(lastHidden - at) <= 1000 || document.hidden) return;
+      if (Math.abs(lastHidden - at) <= 1000 || document.hidden || document.hasFocus()) return;
       emit("window_blur");
     }, 1000);
-  }, opt);
+  }, { signal: ac.signal });
 
   if (config.fullscreen) {
     document.addEventListener("fullscreenchange", () => {

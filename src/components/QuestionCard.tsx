@@ -6,12 +6,11 @@ import {
   createQuestion, deleteQuestion, deleteQuestionImage, patchQuestion, uploadQuestionImage,
 } from "../api/admin";
 import { errMsg, toApiError } from "../api/errors";
-import type { Question, QuestionInput, TimingMode } from "../api/types";
+import type { Question, QuestionInput } from "../api/types";
 import { toast } from "./toast";
 import { Badge, Button, ConfirmModal, Input, Textarea } from "./ui";
 
 type Draft = QuestionInput;
-const QUICK_TIMES = [15, 30, 60, 120];
 
 export const emptyDraft = (): Draft => ({
   text: "", time_limit_sec: 30, points: "1",
@@ -28,7 +27,6 @@ function validate(d: Draft): string | null {
   if (d.options.length < 2) return "Kamida 2 ta variant kerak";
   if (d.options.some(o => !o.text.trim())) return "Variant matni bo'sh";
   if (d.options.filter(o => o.is_correct).length !== 1) return "Bitta to'g'ri variantni belgilang";
-  if (d.time_limit_sec < 10 || d.time_limit_sec > 1800) return "Vaqt 10–1800 soniya oralig'ida";
   if (!(Number(d.points) > 0)) return "Ball musbat bo'lishi kerak";
   return null;
 }
@@ -37,14 +35,13 @@ interface Props {
   examId: number;
   index: number;
   question: Question | null; // null — yangi savol
-  timingMode: TimingMode;
   readOnly: boolean;
   serverErrors?: string[];
   onSaved: () => void;
   onCancelNew?: () => void;
 }
 
-export default function QuestionCard({ examId, index, question, timingMode, readOnly, serverErrors, onSaved, onCancelNew }: Props) {
+export default function QuestionCard({ examId, index, question, readOnly, serverErrors, onSaved, onCancelNew }: Props) {
   const initial = question ? fromQuestion(question) : emptyDraft();
   const [draft, setDraft] = useState<Draft>(initial);
   const [base, setBase] = useState(JSON.stringify(initial));
@@ -190,19 +187,6 @@ export default function QuestionCard({ examId, index, question, timingMode, read
       </div>
 
       <div className="mt-5 flex flex-wrap items-end gap-4 border-t border-border pt-5">
-        {timingMode === "per_question" && (
-          <div>
-            <span className="mb-1.5 block text-[13px] text-ink-muted">Vaqt (soniya)</span>
-            <div className="flex items-center gap-1">
-              <Input type="number" min={10} max={1800} className="h-9 w-20" value={draft.time_limit_sec} disabled={readOnly}
-                onChange={e => setDraft(d => ({ ...d, time_limit_sec: Number(e.target.value) }))} />
-              {!readOnly && QUICK_TIMES.map(t => (
-                <button key={t} onClick={() => setDraft(d => ({ ...d, time_limit_sec: t }))}
-                  className={`h-9 rounded-full px-3 text-xs font-medium transition ${draft.time_limit_sec === t ? "bg-primary text-on-primary" : "bg-surface-100 hover:bg-surface-200"}`}>{t}</button>
-              ))}
-            </div>
-          </div>
-        )}
         <div>
           <span className="mb-1.5 block text-[13px] text-ink-muted">Ball</span>
           <Input type="number" min={0.5} step={0.5} className="h-9 w-20" value={draft.points} disabled={readOnly}

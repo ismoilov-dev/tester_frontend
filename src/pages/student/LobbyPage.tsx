@@ -167,7 +167,7 @@ export default function LobbyPage() {
         {step === "ready" && (
           <div className="space-y-4 text-center">
             <p className="text-ink-muted">
-              {state.exam.questions_count} ta savol. {state.exam.timing_mode === "per_question" ? "Har bir savolga alohida vaqt beriladi." : "Umumiy vaqt beriladi."}
+              {state.exam.questions_count} ta savol. {state.exam.timing_mode === "per_question" ? "Har bir savolga alohida vaqt beriladi." : "Butun test uchun umumiy vaqt beriladi — vaqt «Testni boshlash» bosilgandan boshlanadi."}
               {!state.exam.allow_back && " Oldingi savolga qaytib bo'lmaydi."}
             </p>
             {cfg.fullscreen && <p className="text-sm text-ink-muted">Boshlaganingizda ekran to'liq rejimga o'tadi.</p>}

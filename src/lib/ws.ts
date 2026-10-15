@@ -51,4 +51,4 @@ export class Socket {
   get isOpen() { return this.ws?.readyState === WebSocket.OPEN; }
 }
 
-export const wsBase = import.meta.env.VITE_WS_URL as string;
+export const wsBase = "wss://tester-backend.duckdns.org/ws";

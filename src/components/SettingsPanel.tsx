@@ -37,20 +37,28 @@ const schema = z.object({
   auto_reject_at: optInt,
   points: z.record(z.string(), z.string()),
 }).superRefine((v, ctx) => {
-  if (v.timing_mode === "total" && !(Number(v.total_time_min) > 0))
-    ctx.addIssue({ code: "custom", path: ["total_time_min"], message: "Umumiy vaqtni kiriting" });
+  const m = Number(v.total_time_min);
+  if (!(m >= 1 && m <= 24 * 60))
+    ctx.addIssue({ code: "custom", path: ["total_time_min"], message: "Test vaqtini kiriting (1 daqiqa – 24 soat)" });
 });
 type Form = z.infer<typeof schema>;
 
 const POINT_EVENTS = (Object.keys(EVENT_LABELS) as EventType[]).filter(t => t !== "disconnect");
 const s = (v: number | null | undefined) => (v === null || v === undefined ? "" : String(v));
 const n = (v: string) => (v === "" ? null : Number(v));
+const DEFAULT_TOTAL_MIN = 60;
+const QUICK_TOTALS = [30, 60, 90, 120, 180];
+const fmtTotal = (min: number) => {
+  const h = Math.floor(min / 60), m = min % 60;
+  return [h && `${h} soat`, m && `${m} daqiqa`].filter(Boolean).join(" ") || "—";
+};
 
 function toForm(e: ExamDetail): Form {
   const p = e.proctoring ?? ({} as Proctoring);
   return {
-    title: e.title, description: e.description ?? "", timing_mode: e.timing_mode,
-    total_time_min: e.total_time_sec ? String(Math.round(e.total_time_sec / 60)) : "",
+    // Vaqt endi butun test uchun: eski "per_question" testlar ham umumiy rejimga o'tkaziladi
+    title: e.title, description: e.description ?? "", timing_mode: "total",
+    total_time_min: String(e.total_time_sec ? Math.round(e.total_time_sec / 60) : DEFAULT_TOTAL_MIN),
     allow_back: e.allow_back, shuffle_questions: e.shuffle_questions, shuffle_options: e.shuffle_options,
     show_result_after: e.show_result_after,
     opens_at: toLocalInput(e.opens_at), closes_at: toLocalInput(e.closes_at), max_participants: s(e.max_participants),
@@ -66,8 +74,8 @@ function diff(e: ExamDetail, f: Form): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   const top: Record<string, unknown> = {
     title: f.title.trim(), description: f.description, timing_mode: f.timing_mode,
-    total_time_sec: f.timing_mode === "total" ? Number(f.total_time_min) * 60 : e.total_time_sec,
-    allow_back: f.timing_mode === "total" ? f.allow_back : false,
+    total_time_sec: Number(f.total_time_min) * 60,
+    allow_back: f.allow_back,
     shuffle_questions: f.shuffle_questions, shuffle_options: f.shuffle_options, show_result_after: f.show_result_after,
     opens_at: fromLocalInput(f.opens_at), closes_at: fromLocalInput(f.closes_at), max_participants: n(f.max_participants),
   };
@@ -117,7 +125,7 @@ export default function SettingsPanel({ exam, onSaved }: { exam: ExamDetail; onS
   const [advanced, setAdvanced] = useState(false);
   useEffect(() => { reset(toForm(exam)); }, [exam, reset]);
 
-  const timing = useWatch({ control, name: "timing_mode" });
+  const totalMin = Number(useWatch({ control, name: "total_time_min" }));
   const camera = useWatch({ control, name: "camera" });
   const mic = useWatch({ control, name: "microphone" });
   const fullscreen = useWatch({ control, name: "fullscreen" });
@@ -130,6 +138,8 @@ export default function SettingsPanel({ exam, onSaved }: { exam: ExamDetail; onS
   const all = st === "draft";
   const editable = (field: "title" | "closes_at" | "other") => all || (st === "open" && field !== "other");
   const readOnly = st === "closed" || st === "archived";
+  // Eski testda (vaqt har savolga) saqlash tugmasi ko'rinsin — umumiy vaqtga o'tkazish uchun
+  const needsMigration = all && (exam.timing_mode !== "total" || !exam.total_time_sec);
 
   const save = useMutation({
     mutationFn: (f: Form) => {
@@ -162,17 +172,29 @@ export default function SettingsPanel({ exam, onSaved }: { exam: ExamDetail; onS
         <label className="block"><Label hint="(ixtiyoriy)">Tavsif</Label><Textarea rows={2} disabled={!editable("other")} placeholder="O'quvchi kirishda ko'radi" {...register("description")} /></label>
       </Section>
 
-      <Section title="Vaqt" description="Har savolga alohida vaqt yoki butun test uchun bitta umumiy vaqt.">
-        <Segmented value={timing} disabled={!editable("other")} onChange={m => setValue("timing_mode", m, { shouldDirty: true })}
-          options={[{ value: "per_question", label: "Har savolga" }, { value: "total", label: "Umumiy" }]} />
-        {timing === "per_question" ? (
-          <p className="text-[13px] text-ink-muted">Vaqt har bir savol kartochkasida belgilanadi.</p>
-        ) : (
-          <>
-            <label className="block"><Label>Umumiy vaqt (daqiqa)</Label><Input type="number" min={1} className="max-w-40" disabled={!editable("other")} {...register("total_time_min")} />{err("total_time_min")}</label>
-            {toggle("allow_back", "Orqaga qaytish", "O'quvchi oldingi savollarga qaytib javobini o'zgartira oladi")}
-          </>
+      <Section title="Vaqt" description="Butun test uchun umumiy vaqt. O'quvchi testni boshlagan paytdan hisoblanadi, tugasa test avtomatik yakunlanadi.">
+        {needsMigration && (
+          <p className="rounded-md bg-peach/60 px-4 py-3 text-sm">Bu testda vaqt har savolga alohida edi. Saqlasangiz, butun test uchun umumiy vaqtga o'tadi.</p>
         )}
+        <div>
+          <Label>Test vaqti</Label>
+          <div className="flex flex-wrap items-center gap-2">
+            <Input type="number" min={1} max={1440} className="max-w-28" disabled={!editable("other")} {...register("total_time_min")} />
+            <span className="text-sm text-ink-muted">daqiqa{totalMin >= 60 && ` (${fmtTotal(totalMin)})`}</span>
+          </div>
+          {editable("other") && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {QUICK_TOTALS.map(t => (
+                <button key={t} type="button" onClick={() => setValue("total_time_min", String(t), { shouldDirty: true, shouldValidate: true })}
+                  className={`h-8 rounded-full px-3 text-xs font-medium transition ${totalMin === t ? "bg-primary text-on-primary" : "bg-surface-100 hover:bg-surface-200"}`}>
+                  {fmtTotal(t)}
+                </button>
+              ))}
+            </div>
+          )}
+          {err("total_time_min")}
+        </div>
+        {toggle("allow_back", "Orqaga qaytish", "O'quvchi oldingi savollarga qaytib javobini o'zgartira oladi")}
       </Section>
 
       <Section title="Savollar va natija">
@@ -246,7 +268,7 @@ export default function SettingsPanel({ exam, onSaved }: { exam: ExamDetail; onS
 
       {Object.keys(errors).length > 0 && <ErrorBox>Formada xatolar bor — qizil maydonlarni tekshiring.</ErrorBox>}
 
-      {!readOnly && isDirty && (
+      {!readOnly && (isDirty || needsMigration) && (
         <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-bg/90 backdrop-blur">
           <div className="mx-auto flex max-w-2xl items-center justify-between gap-3 px-4 py-3">
             <span className="text-sm text-ink-muted">Saqlanmagan o'zgarishlar bor</span>

@@ -11,7 +11,9 @@ export const me = () => adminApi.get<User>("/auth/me/").then(r => r.data);
 // Testlar
 export const listExams = (params: { status?: string; page?: number }) =>
   adminApi.get<Paginated<Exam>>("/admin/exams/", { params }).then(r => r.data);
-export const createExam = (title: string) => adminApi.post<Exam>("/admin/exams/", { title }).then(r => r.data);
+// Yangi test: vaqt butun test uchun (default 1 soat)
+export const createExam = (title: string) =>
+  adminApi.post<Exam>("/admin/exams/", { title, timing_mode: "total", total_time_sec: 3600 }).then(r => r.data);
 export const getExam = (id: number | string) => adminApi.get<ExamDetail>(`/admin/exams/${id}/`).then(r => r.data);
 export const patchExam = (id: number | string, data: Record<string, unknown>) =>
   adminApi.patch<ExamDetail>(`/admin/exams/${id}/`, data).then(r => r.data);

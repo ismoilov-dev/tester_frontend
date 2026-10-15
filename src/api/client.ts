@@ -3,7 +3,7 @@ import { useAuth } from "../stores/auth";
 import { useAttempt } from "../stores/attempt";
 import type { TokenPair } from "./types";
 
-const baseURL = import.meta.env.VITE_API_URL as string;
+const baseURL = "https://tester-backend.duckdns.org/api";
 
 export const adminApi = axios.create({ baseURL });
 export const studentApi = axios.create({ baseURL });
