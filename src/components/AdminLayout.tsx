@@ -1,11 +1,19 @@
+import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { Link, Outlet, useNavigate } from "react-router-dom";
-import { logout } from "../api/admin";
+import { logout, me } from "../api/admin";
 import { useAuth } from "../stores/auth";
+import { useFeedbackPrompt } from "../stores/feedback";
+import FeedbackModal from "./FeedbackModal";
 import { Button } from "./ui";
 
 export default function AdminLayout() {
   const user = useAuth(s => s.user);
   const nav = useNavigate();
+  // feedback_due backenddan — sahifa yangilansa ham to'g'ri holat
+  const meQ = useQuery({ queryKey: ["me"], queryFn: me, retry: false, staleTime: 60_000 });
+  const feedbackDue = meQ.data?.feedback_due;
+  useEffect(() => { if (feedbackDue) useFeedbackPrompt.getState().ask(); }, [feedbackDue]);
 
   async function onLogout() {
     const refresh = useAuth.getState().refresh;
@@ -31,6 +39,7 @@ export default function AdminLayout() {
       <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
         <Outlet />
       </main>
+      <FeedbackModal />
     </div>
   );
 }

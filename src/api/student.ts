@@ -6,8 +6,9 @@ import type {
 import type { ProctorEvent } from "../proctoring/types";
 
 export const getRoom = (code: string) => studentApi.get<Room>(`/rooms/${code}/`).then(r => r.data);
-export const joinRoom = (code: string, full_name: string, group: string) =>
-  studentApi.post<JoinResponse>(`/rooms/${code}/join/`, { full_name, group }).then(r => r.data);
+// id_token hozircha backendda tekshirilmaydi — full_name Google profilidan olinadi
+export const joinRoom = (code: string, full_name: string, group: string, id_token: string) =>
+  studentApi.post<JoinResponse>(`/rooms/${code}/join/`, { full_name, group, id_token }).then(r => r.data);
 
 export const getState = () => studentApi.get<AttemptState>("/attempt/state/").then(r => r.data);
 export const sendConsent = (client_info: Record<string, unknown>) =>

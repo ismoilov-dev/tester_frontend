@@ -1,14 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, Outlet, useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { archiveExam, closeExam, deleteExam, duplicateExam, getExam, publishExam } from "../../api/admin";
 import { errMsg, toApiError } from "../../api/errors";
 import type { ExamDetail, PublishResponse } from "../../api/types";
 import PublishModal from "../../components/PublishModal";
 import { toast } from "../../components/toast";
+import { useFeedbackPrompt } from "../../stores/feedback";
 import { Badge, Button, ConfirmModal, ErrorBox, FullPageSpinner, Menu, TabNav } from "../../components/ui";
 import { copyText, fmtMinutes, fmtNum } from "../../lib/format";
-import { EXAM_STATUS_HINTS, EXAM_STATUS_LABELS, EXAM_STATUS_TONES } from "../../lib/labels";
+import { examDeleteText, EXAM_STATUS_HINTS, EXAM_STATUS_LABELS, EXAM_STATUS_TONES } from "../../lib/labels";
 
 export type PublishErrors = { byId: Record<number, string[]>; general: string[] };
 export interface ExamCtx { exam: ExamDetail; refetch: () => void; pubErrors: PublishErrors | null; }
@@ -40,11 +41,20 @@ export default function ExamLayout() {
   const [pubErrors, setPubErrors] = useState<PublishErrors | null>(null);
   const [confirm, setConfirm] = useState<Confirm>(null);
 
+  // Fikr modali kod/QR oynasini yopmasin — PublishModal yopilgach ochiladi
+  useEffect(() => {
+    useFeedbackPrompt.getState().block(!!published);
+    return () => useFeedbackPrompt.getState().block(false);
+  }, [published]);
+
   const refetch = () => { qc.invalidateQueries({ queryKey: ["exam", id] }); qc.invalidateQueries({ queryKey: ["exams"] }); };
 
   const publish = useMutation({
     mutationFn: () => publishExam(id!),
-    onSuccess: r => { setPubErrors(null); setPublished(r); refetch(); },
+    onSuccess: r => {
+      setPubErrors(null); setPublished(r); refetch();
+      if (r.ask_feedback) { useFeedbackPrompt.getState().block(true); useFeedbackPrompt.getState().ask(r.id); }
+    },
     onError: e => {
       const err = toApiError(e);
       if (err.code === "PUBLISH_VALIDATION" && q.data) {
@@ -56,10 +66,10 @@ export default function ExamLayout() {
   });
   const action = useMutation({
     mutationFn: (a: Exclude<Confirm, null>) =>
-      a === "close" ? closeExam(id!) : a === "archive" ? archiveExam(id!) : deleteExam(id!),
+      a === "close" ? closeExam(id!) : a === "archive" ? archiveExam(id!) : deleteExam(id!, q.data?.status === "open"),
     onSuccess: (_, a) => {
       setConfirm(null);
-      if (a === "delete") { qc.invalidateQueries({ queryKey: ["exams"] }); nav("/admin"); return; }
+      if (a === "delete") { qc.invalidateQueries({ queryKey: ["exams"] }); toast("O'chirildi", "success"); nav("/admin"); return; }
       refetch();
       toast(a === "close" ? "Test yopildi" : "Arxivlandi", "success");
     },
@@ -118,7 +128,7 @@ export default function ExamLayout() {
             { label: "Nusxa olish", onClick: () => dup.mutate() },
             { label: "Testni yopish", onClick: () => setConfirm("close"), hidden: st !== "open", danger: true },
             { label: "Arxivlash", onClick: () => setConfirm("archive"), hidden: st !== "closed" },
-            { label: "O'chirish", onClick: () => setConfirm("delete"), hidden: st !== "draft", danger: true },
+            { label: "O'chirish", onClick: () => setConfirm("delete"), danger: true },
           ]} />
         </div>
       </header>
@@ -149,7 +159,7 @@ export default function ExamLayout() {
         text="Test ro'yxatda «Arxiv» bo'limiga o'tadi. Natijalar saqlanib qoladi." confirmText="Arxivlash"
         loading={action.isPending} onConfirm={() => action.mutate("archive")} />
       <ConfirmModal open={confirm === "delete"} onClose={() => setConfirm(null)} danger title="Testni o'chirish"
-        text="Qoralama butunlay o'chiriladi." confirmText="O'chirish"
+        text={examDeleteText(st)} confirmText="O'chirish"
         loading={action.isPending} onConfirm={() => action.mutate("delete")} />
     </div>
   );

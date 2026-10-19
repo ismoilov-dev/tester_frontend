@@ -89,7 +89,7 @@ frontend/src/
 |---|---|---|
 | `/` | Kod kiritish (`dqn-rfab-teu`) yoki admin login havolasi | hamma |
 | `/:code` | O'quvchi oqimi (join → lobby → exam → result), bitta sahifa ichida holatga qarab | o'quvchi |
-| `/admin/login` | Email + parol | admin |
+| `/admin/login` | Google bilan kirish | admin |
 | `/admin` | Testlar ro'yxati | admin |
 | `/admin/exams/:id` | Test muharriri (sozlamalar + savollar) | admin |
 | `/admin/exams/:id/live` | Real-time panel | admin |
@@ -541,7 +541,7 @@ URL: `${VITE_WS_URL}/admin/exams/${examId}/?token=${accessToken}`
 ## 10. Admin panel
 
 ### 10.1 Login (`/admin/login`)
-`POST /auth/login/ {username: email, password}` → `{access, refresh, user}`. Xato `401 invalid_credentials` → "Email yoki parol noto'g'ri". `429` → throttling.
+Faqat "Google bilan kirish" (Google Identity Services, Client ID `LoginPage.tsx` da). Tugma bergan `credential` → `POST /auth/google/ {id_token}` → `{access, refresh, user}`. Birinchi kirishda admin hisobi avtomatik yaratiladi. Xatolar: `401 google_token_invalid`, `403 account_disabled`.
 Chiqish: `POST /auth/logout/ {refresh}` → tokenlarni o'chirish.
 
 ### 10.2 Testlar ro'yxati (`/admin`)

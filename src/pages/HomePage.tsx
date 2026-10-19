@@ -44,7 +44,7 @@ export default function HomePage() {
           <Button type="submit" size="lg" className="w-full">Davom etish</Button>
         </form>
       </div>
-      <Link to="/admin/login" className="relative mt-8 text-[13px] text-ink-muted hover:text-ink">Admin sifatida kirish →</Link>
+      <Link to="/admin/login" className="relative mt-8 text-[13px] text-ink-muted hover:text-ink">Admin sifatida Google bilan kirish →</Link>
     </div>
   );
 }

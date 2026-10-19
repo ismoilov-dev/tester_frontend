@@ -44,7 +44,7 @@ export function refreshAccess(): Promise<string | null> {
 adminApi.interceptors.response.use(undefined, async (error: AxiosError) => {
   const cfg = error.config as (InternalAxiosRequestConfig & { _retry?: boolean }) | undefined;
   const url = cfg?.url ?? "";
-  if (error.response?.status === 401 && cfg && !cfg._retry && !url.includes("/auth/login") && !url.includes("/auth/refresh")) {
+  if (error.response?.status === 401 && cfg && !cfg._retry && !url.includes("/auth/google") && !url.includes("/auth/refresh")) {
     cfg._retry = true;
     const access = await refreshAccess();
     if (access) {

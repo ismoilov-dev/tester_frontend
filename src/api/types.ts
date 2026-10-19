@@ -16,7 +16,10 @@ export interface Proctoring {
 }
 
 // ---- Admin ----
-export interface User { id: number; email: string; full_name: string; avatar_url: string; role: "superadmin" | "admin" | "student"; }
+export interface User { id: number; email: string; full_name: string; avatar_url: string; role: "superadmin" | "admin" | "student";
+  /** true: birinchi test nashr qilingan, platforma haqida fikr so'rash vaqti */
+  feedback_due: boolean;
+}
 export interface TokenPair { access: string; refresh: string; user: User; }
 
 export interface Exam {
@@ -41,7 +44,14 @@ export interface QuestionInput {
 }
 export interface ExamDetail extends Exam { questions: Question[]; }
 export interface Paginated<T> { count: number; next: string | null; previous: string | null; results: T[]; }
-export interface PublishResponse { id: number; code: string; share_url: string; status: ExamStatus; }
+export interface PublishResponse { id: number; code: string; share_url: string; status: ExamStatus; ask_feedback?: boolean; }
+
+// Platforma haqida fikr: bir foydalanuvchi bir marta (qayta — 409 FEEDBACK_EXISTS)
+export interface FeedbackIn { rating: number; comment?: string; exam_id?: number | null; }
+export interface Feedback {
+  id: number; user_email: string; user_name: string; exam: number | null; exam_title: string;
+  rating: number; comment: string; dismissed: boolean; created_at: string;
+}
 
 export interface ParticipantRow {
   id: string; full_name: string; group: string; status: ParticipantStatus; is_duplicate: boolean; ip: string | null;

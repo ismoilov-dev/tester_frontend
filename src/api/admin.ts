@@ -1,12 +1,17 @@
 import { adminApi } from "./client";
 import type {
-  Exam, ExamDetail, Paginated, ParticipantDetail, ParticipantRow, PublishResponse, Question, QuestionInput, TokenPair, User,
+  Exam, ExamDetail, Feedback, FeedbackIn, Paginated, ParticipantDetail, ParticipantRow, PublishResponse, Question, QuestionInput, TokenPair, User,
 } from "./types";
 
-export const login = (email: string, password: string) =>
-  adminApi.post<TokenPair>("/auth/login/", { username: email, password }).then(r => r.data);
+export const googleLogin = (idToken: string) =>
+  adminApi.post<TokenPair>("/auth/google/", { id_token: idToken }).then(r => r.data);
 export const logout = (refresh: string) => adminApi.post("/auth/logout/", { refresh });
 export const me = () => adminApi.get<User>("/auth/me/").then(r => r.data);
+
+// Fikr-mulohaza: `me().feedback_due` yoki publish javobidagi `ask_feedback` bo'lsa so'raladi
+export const submitFeedback = (data: FeedbackIn) => adminApi.post<Feedback>("/feedback/", data).then(r => r.data);
+// Voz kechish — backend boshqa so'ramaydi
+export const dismissFeedback = () => adminApi.post("/feedback/dismiss/");
 
 // Testlar
 export const listExams = (params: { status?: string; page?: number }) =>
@@ -17,7 +22,9 @@ export const createExam = (title: string) =>
 export const getExam = (id: number | string) => adminApi.get<ExamDetail>(`/admin/exams/${id}/`).then(r => r.data);
 export const patchExam = (id: number | string, data: Record<string, unknown>) =>
   adminApi.patch<ExamDetail>(`/admin/exams/${id}/`, data).then(r => r.data);
-export const deleteExam = (id: number | string) => adminApi.delete(`/admin/exams/${id}/`);
+// open test uchun force kerak: backend avval yopadi (ichkaridagilar majburan topshiriladi), keyin o'chiradi
+export const deleteExam = (id: number | string, force = false) =>
+  adminApi.delete(`/admin/exams/${id}/`, { params: force ? { force: true } : undefined });
 export const publishExam = (id: number | string) => adminApi.post<PublishResponse>(`/admin/exams/${id}/publish/`).then(r => r.data);
 export const closeExam = (id: number | string) => adminApi.post(`/admin/exams/${id}/close/`).then(r => r.data);
 export const archiveExam = (id: number | string) => adminApi.post(`/admin/exams/${id}/archive/`).then(r => r.data);

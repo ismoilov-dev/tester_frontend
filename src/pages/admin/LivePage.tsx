@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { getExam, listParticipants } from "../../api/admin";
+import { getExam, getParticipant, listParticipants } from "../../api/admin";
 import { refreshAccess } from "../../api/client";
 import { errMsg } from "../../api/errors";
 import type { EventType, ParticipantRow, ParticipantStatus } from "../../api/types";
@@ -73,6 +73,24 @@ export default function LivePage() {
   }, [id]);
 
   useEffect(() => { const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t); }, []);
+
+  // Lenta faqat WS bilan to'lsa, sahifa ochilishidan oldingi (yoki WS formati mos kelmagan) eventlar ko'rinmaydi.
+  // violation_score o'zgargan har bir o'quvchining eventlarini REST'dan olib, lentaga qo'shamiz.
+  const seenScore = useRef<Record<string, number>>({});
+  useEffect(() => {
+    for (const r of rows.values()) {
+      if (!r.violation_score || seenScore.current[r.id] === r.violation_score) continue;
+      seenScore.current[r.id] = r.violation_score;
+      getParticipant(r.id).then(p => setFeed(list => {
+        const keys = new Set(list.map(f => f.key));
+        const fresh: FeedItem[] = p.events.filter(e => !keys.has(e.id)).map(e => ({
+          key: e.id, pid: p.id, name: p.full_name, type: e.type, points: e.points,
+          duration_ms: e.duration_ms, screenshot_url: e.screenshot_url, at: new Date(e.created_at).getTime(),
+        }));
+        return fresh.length ? [...list, ...fresh].sort((a, b) => b.at - a.at).slice(0, 100) : list;
+      })).catch(() => { delete seenScore.current[r.id]; });
+    }
+  }, [rows]);
 
   // ---- WebSocket ----
   useEffect(() => {
