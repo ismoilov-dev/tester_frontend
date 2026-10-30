@@ -69,9 +69,9 @@ export default function ExamsPage() {
               action={<Button onClick={openNew}>Yangi test</Button>} />
       ) : (
         <>
-          <div className="overflow-hidden rounded-xl border border-border">
-            {q.data!.results.map((e, i) => (
-              <ExamRow key={e.id} exam={e} first={i === 0}
+          <div className="rounded-xl border border-border">
+            {q.data!.results.map((e, i, arr) => (
+              <ExamRow key={e.id} exam={e} first={i === 0} last={i === arr.length - 1}
                 onOpen={path => nav(`/admin/exams/${e.id}${path}`)}
                 onDuplicate={() => dup.mutate(e.id)} onDelete={() => setToDelete(e)} />
             ))}
@@ -108,8 +108,8 @@ export default function ExamsPage() {
 }
 
 /** Bir qator = bitta test: nomi, holati va holatga mos BITTA asosiy harakat. */
-function ExamRow({ exam: e, first, onOpen, onDuplicate, onDelete }:
-  { exam: Exam; first: boolean; onOpen: (path: string) => void; onDuplicate: () => void; onDelete: () => void }) {
+function ExamRow({ exam: e, first, last, onOpen, onDuplicate, onDelete }:
+  { exam: Exam; first: boolean; last: boolean; onOpen: (path: string) => void; onDuplicate: () => void; onDelete: () => void }) {
   const main =
     e.status === "draft" ? { label: "Tahrirlash", path: "" }
       : e.status === "open" ? { label: "Live kuzatish", path: "/live" }
@@ -117,7 +117,7 @@ function ExamRow({ exam: e, first, onOpen, onDuplicate, onDelete }:
 
   return (
     <div onClick={() => onOpen(main.path)}
-      className={`flex cursor-pointer flex-wrap items-center gap-x-6 gap-y-3 px-5 py-4 transition hover:bg-surface-100 ${first ? "" : "border-t border-border"}`}>
+      className={`flex cursor-pointer flex-wrap items-center gap-x-6 gap-y-3 px-5 py-4 transition hover:bg-surface-100 ${first ? "rounded-t-xl" : "border-t border-border"} ${last ? "rounded-b-xl" : ""}`}>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-3">
           <p className="truncate font-medium">{e.title}</p>
