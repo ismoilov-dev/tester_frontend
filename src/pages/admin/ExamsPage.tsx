@@ -7,7 +7,7 @@ import type { Exam, ExamStatus } from "../../api/types";
 import { toast } from "../../components/toast";
 import { Badge, Button, ConfirmModal, EmptyState, ErrorBox, FullPageSpinner, Input, Label, Menu, Modal, Segmented } from "../../components/ui";
 import { copyText, fmtMinutes } from "../../lib/format";
-import { EXAM_STATUS_LABELS, EXAM_STATUS_TONES } from "../../lib/labels";
+import { examDeleteText, EXAM_STATUS_LABELS, EXAM_STATUS_TONES } from "../../lib/labels";
 
 type Filter = "" | ExamStatus;
 const FILTERS: { value: Filter; label: string }[] = [
@@ -41,7 +41,7 @@ export default function ExamsPage() {
     onError: e => toast(errMsg(e), "error"),
   });
   const del = useMutation({
-    mutationFn: (id: number) => deleteExam(id),
+    mutationFn: (e: Exam) => deleteExam(e.id, e.status === "open"),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["exams"] }); setToDelete(null); toast("O'chirildi", "success"); },
     onError: e => toast(errMsg(e), "error"),
   });
@@ -69,9 +69,9 @@ export default function ExamsPage() {
               action={<Button onClick={openNew}>Yangi test</Button>} />
       ) : (
         <>
-          <div className="overflow-hidden rounded-xl border border-border">
-            {q.data!.results.map((e, i) => (
-              <ExamRow key={e.id} exam={e} first={i === 0}
+          <div className="rounded-xl border border-border">
+            {q.data!.results.map((e, i, arr) => (
+              <ExamRow key={e.id} exam={e} first={i === 0} last={i === arr.length - 1}
                 onOpen={path => nav(`/admin/exams/${e.id}${path}`)}
                 onDuplicate={() => dup.mutate(e.id)} onDelete={() => setToDelete(e)} />
             ))}
@@ -101,15 +101,15 @@ export default function ExamsPage() {
       </Modal>
 
       <ConfirmModal open={!!toDelete} onClose={() => setToDelete(null)} danger title="Testni o'chirish"
-        text={<>«{toDelete?.title}» butunlay o'chiriladi.</>} confirmText="O'chirish"
-        loading={del.isPending} onConfirm={() => toDelete && del.mutate(toDelete.id)} />
+        text={toDelete ? examDeleteText(toDelete.status, toDelete.title) : undefined} confirmText="O'chirish"
+        loading={del.isPending} onConfirm={() => toDelete && del.mutate(toDelete)} />
     </div>
   );
 }
 
 /** Bir qator = bitta test: nomi, holati va holatga mos BITTA asosiy harakat. */
-function ExamRow({ exam: e, first, onOpen, onDuplicate, onDelete }:
-  { exam: Exam; first: boolean; onOpen: (path: string) => void; onDuplicate: () => void; onDelete: () => void }) {
+function ExamRow({ exam: e, first, last, onOpen, onDuplicate, onDelete }:
+  { exam: Exam; first: boolean; last: boolean; onOpen: (path: string) => void; onDuplicate: () => void; onDelete: () => void }) {
   const main =
     e.status === "draft" ? { label: "Tahrirlash", path: "" }
       : e.status === "open" ? { label: "Live kuzatish", path: "/live" }
@@ -117,7 +117,7 @@ function ExamRow({ exam: e, first, onOpen, onDuplicate, onDelete }:
 
   return (
     <div onClick={() => onOpen(main.path)}
-      className={`flex cursor-pointer flex-wrap items-center gap-x-6 gap-y-3 px-5 py-4 transition hover:bg-surface-100 ${first ? "" : "border-t border-border"}`}>
+      className={`flex cursor-pointer flex-wrap items-center gap-x-6 gap-y-3 px-5 py-4 transition hover:bg-surface-100 ${first ? "rounded-t-xl" : "border-t border-border"} ${last ? "rounded-b-xl" : ""}`}>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-3">
           <p className="truncate font-medium">{e.title}</p>
@@ -139,7 +139,7 @@ function ExamRow({ exam: e, first, onOpen, onDuplicate, onDelete }:
           { label: "Savollar", onClick: () => onOpen(""), hidden: e.status === "draft" },
           { label: "Natijalar", onClick: () => onOpen("/results"), hidden: e.status === "draft" || main.path === "/results" },
           { label: "Nusxa olish", onClick: onDuplicate },
-          { label: "O'chirish", onClick: onDelete, hidden: e.status !== "draft", danger: true },
+          { label: "O'chirish", onClick: onDelete, danger: true },
         ]} />
       </div>
     </div>

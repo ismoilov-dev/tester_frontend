@@ -202,6 +202,7 @@ export function TabNav({ tabs }: { tabs: { to: string; label: ReactNode; end?: b
 /** "⋯" menyusi — ikkinchi darajali amallar uchun. */
 export function Menu({ items }: { items: { label: ReactNode; onClick: () => void; danger?: boolean; hidden?: boolean }[] }) {
   const [open, setOpen] = useState(false);
+  const [up, setUp] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!open) return;
@@ -213,12 +214,17 @@ export function Menu({ items }: { items: { label: ReactNode; onClick: () => void
   if (!visible.length) return null;
   return (
     <div ref={ref} className="relative">
-      <button type="button" aria-label="Boshqa amallar" onClick={e => { e.stopPropagation(); setOpen(o => !o); }}
+      <button type="button" aria-label="Boshqa amallar" onClick={e => {
+          e.stopPropagation();
+          // Pastda joy yetmasa — menyu yuqoriga ochiladi
+          setUp(window.innerHeight - e.currentTarget.getBoundingClientRect().bottom < 200);
+          setOpen(o => !o);
+        }}
         className="flex h-8 w-8 items-center justify-center rounded-full text-ink-muted transition hover:bg-surface-200 hover:text-ink">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><circle cx="3" cy="8" r="1.4" /><circle cx="8" cy="8" r="1.4" /><circle cx="13" cy="8" r="1.4" /></svg>
       </button>
       {open && (
-        <div className="absolute right-0 z-30 mt-1 min-w-44 rounded-md border border-border bg-bg p-1 shadow-md">
+        <div className={`absolute right-0 z-30 ${up ? "bottom-full mb-1" : "mt-1"} min-w-44 rounded-md border border-border bg-bg p-1 shadow-md`}>
           {visible.map((i, k) => (
             <button key={k} type="button" onClick={e => { e.stopPropagation(); setOpen(false); i.onClick(); }}
               className={`block w-full rounded-sm px-3 py-2 text-left text-sm transition hover:bg-surface-100 ${i.danger ? "text-danger" : "text-ink"}`}>

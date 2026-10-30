@@ -51,3 +51,11 @@ export const EXAM_STATUS_HINTS: Record<ExamStatus, string> = {
   closed: "Yangi kirish yo'q. Natijalarni ko'rishingiz mumkin.",
   archived: "Arxivlangan test.",
 };
+
+/** O'chirishni tasdiqlash matni — holatga qarab nima yo'qolishini aytadi. */
+export function examDeleteText(status: ExamStatus, title?: string): string {
+  const name = title ? `«${title}»` : "Test";
+  if (status === "draft") return `${name} butunlay o'chiriladi.`;
+  const base = `${name} savollar, qatnashchilar, javoblar va natijalar bilan birga butunlay o'chiriladi. Buni qaytarib bo'lmaydi.`;
+  return status === "open" ? `Test hozir ochiq: avval yopiladi va ishlayotgan o'quvchilarning javoblari majburan topshiriladi. ${base}` : base;
+}

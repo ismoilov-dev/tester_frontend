@@ -116,6 +116,11 @@ export default function ParticipantPage() {
                     {a.option_text ?? <i>javob bermagan</i>}
                     <span className="ml-2 font-mono text-xs text-ink-subtle">{(a.time_spent_ms / 1000).toFixed(1)} s</span>
                   </p>
+                  {!a.is_correct && (
+                    <p className="mt-0.5 font-mono text-xs text-ink-subtle">
+                      tanlagan: #{a.option_id ?? "—"} · to'g'ri: #{a.correct_option_id ?? "belgilanmagan"}
+                    </p>
+                  )}
                 </div>
               ))}
             </div>
