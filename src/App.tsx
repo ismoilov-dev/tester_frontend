@@ -1,4 +1,6 @@
 import { Navigate, Route, Routes } from "react-router-dom";
+import BillingPage from "./pages/admin/BillingPage";
+import PremiumPage from "./pages/admin/PremiumPage";
 import AdminLayout from "./components/AdminLayout";
 import RequireAdmin from "./components/RequireAdmin";
 import HomePage from "./pages/HomePage";
@@ -26,6 +28,8 @@ export default function App() {
           <Route path="live" element={<LivePage />} />
           <Route path="results" element={<ResultsPage />} />
         </Route>
+        <Route path="billing" element={<BillingPage />} />
+        <Route path="premium" element={<PremiumPage />} />
         <Route path="participants/:pid" element={<ParticipantPage />} />
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Route>

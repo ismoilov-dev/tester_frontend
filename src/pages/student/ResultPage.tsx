@@ -1,10 +1,8 @@
 import StudentShell, { StatusOrb } from "../../components/StudentShell";
-import { fmtNum } from "../../lib/format";
 import { useAttempt } from "../../stores/attempt";
 
 export default function ResultPage() {
   const kind = useAttempt(s => s.resultKind);
-  const result = useAttempt(s => s.result);
   const note = useAttempt(s => s.note);
   const name = useAttempt(s => s.state?.full_name);
   const title = useAttempt(s => s.state?.exam.title);
@@ -29,23 +27,14 @@ export default function ResultPage() {
       </>
     );
   } else {
-    const pct = result && result.max > 0 ? Math.round((result.score / result.max) * 100) : null;
+    // Natija o'quvchilardan yashirilgan: ball faqat o'qituvchi panelida ko'rinadi
     body = (
       <>
         <StatusOrb glow="lagoon">{icon("M5 12.5l4.5 4.5L19 7.5")}</StatusOrb>
         <h1 className="text-[28px] font-semibold leading-[34px] tracking-tight">
           {kind === "force_submit" ? "Test o'qituvchi tomonidan yakunlandi" : "Test yakunlandi"}
         </h1>
-        {result ? (
-          <div className="mt-6">
-            <p className="text-[64px] font-semibold leading-[64px] tracking-[-0.035em] tabular-nums">
-              {fmtNum(result.score)}<span className="text-[28px] text-ink-subtle"> / {fmtNum(result.max)}</span>
-            </p>
-            {pct !== null && <p className="mt-2 text-ink-muted">{pct}% to'g'ri</p>}
-          </div>
-        ) : (
-          <p className="mt-2 text-ink-muted">Javoblaringiz qabul qilindi. Natijani o'qituvchingiz e'lon qiladi.</p>
-        )}
+        <p className="mt-2 text-ink-muted">Javoblaringiz qabul qilindi. Natijani o'qituvchingiz e'lon qiladi.</p>
       </>
     );
   }

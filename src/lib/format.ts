@@ -33,3 +33,14 @@ export const fromLocalInput = (v: string) => (v ? new Date(v).toISOString() : nu
 export async function copyText(text: string) {
   try { await navigator.clipboard.writeText(text); return true; } catch { return false; }
 }
+
+export const fmtSum = (n: number) => `${n.toLocaleString("ru-RU").replace(/ /g, " ")} so'm`;
+export function fmtDate(iso: string | null | undefined) {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString("uz-UZ", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+/** Necha kun qoldi (yuqoriga yaxlitlangan; o'tgan bo'lsa 0) */
+export function daysLeft(iso: string | null | undefined) {
+  if (!iso) return 0;
+  return Math.max(0, Math.ceil((new Date(iso).getTime() - Date.now()) / 86_400_000));
+}

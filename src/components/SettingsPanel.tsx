@@ -76,7 +76,9 @@ function diff(e: ExamDetail, f: Form): Record<string, unknown> {
     title: f.title.trim(), description: f.description, timing_mode: f.timing_mode,
     total_time_sec: Number(f.total_time_min) * 60,
     allow_back: f.allow_back,
-    shuffle_questions: f.shuffle_questions, shuffle_options: f.shuffle_options, show_result_after: f.show_result_after,
+    shuffle_questions: f.shuffle_questions, shuffle_options: f.shuffle_options,
+    // Natija o'quvchilarga hech qachon ko'rsatilmaydi
+    show_result_after: false,
     opens_at: fromLocalInput(f.opens_at), closes_at: fromLocalInput(f.closes_at), max_participants: n(f.max_participants),
   };
   for (const [k, v] of Object.entries(top)) {
@@ -197,10 +199,9 @@ export default function SettingsPanel({ exam, onSaved }: { exam: ExamDetail; onS
         {toggle("allow_back", "Orqaga qaytish", "O'quvchi oldingi savollarga qaytib javobini o'zgartira oladi")}
       </Section>
 
-      <Section title="Savollar va natija">
+      <Section title="Savollar">
         {toggle("shuffle_questions", "Savollarni aralashtirish", "Har o'quvchida savollar tartibi har xil")}
         {toggle("shuffle_options", "Variantlarni aralashtirish", "Javob variantlari tartibi har xil")}
-        {toggle("show_result_after", "Natijani darhol ko'rsatish", "Test tugagach o'quvchi o'z ballini ko'radi")}
       </Section>
 
       <Section title="Anti-cheat" description="Test davomida nimalar kuzatilishini tanlang.">

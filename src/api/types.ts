@@ -19,7 +19,26 @@ export interface Proctoring {
 export interface User { id: number; email: string; full_name: string; avatar_url: string; role: "superadmin" | "admin" | "student";
   /** true: birinchi test nashr qilingan, platforma haqida fikr so'rash vaqti */
   feedback_due: boolean;
+  /** Obuna yoki sinov muddati faol: test nashr qila oladi */
+  has_access: boolean;
+  access_until: string | null;
 }
+
+// ---- Tarif (to'lov chek orqali, superadmin Django admin'da tasdiqlaydi) ----
+export type Plan = "teacher" | "center";
+export type PaymentStatus = "pending" | "approved" | "rejected";
+export interface Payment { id: number; plan: Plan; amount: number; status: PaymentStatus; admin_note: string; created_at: string; reviewed_at: string | null; }
+export interface BillingInfo {
+  plan: Plan; has_access: boolean;
+  access_until: string | null; trial_until: string | null; paid_until: string | null;
+  is_center_owner: boolean;
+  center: { owner_email: string; name: string; until: string | null } | null;
+  pending_payment: Payment | null; last_payment: Payment | null;
+  prices: Record<Plan, number>;
+  card: { number: string; holder: string };
+  max_teachers: number;
+}
+export interface CenterMember { id: number; email: string; full_name: string; added_at: string; }
 export interface TokenPair { access: string; refresh: string; user: User; }
 
 export interface Exam {

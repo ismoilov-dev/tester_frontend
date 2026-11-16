@@ -1,6 +1,8 @@
+import * as mock from "./billingMock";
 import { adminApi } from "./client";
+import { toApiError } from "./errors";
 import type {
-  Exam, ExamDetail, Feedback, FeedbackIn, Paginated, ParticipantDetail, ParticipantRow, PublishResponse, Question, QuestionInput, TokenPair, User,
+  BillingInfo, CenterMember, Exam, ExamDetail, Feedback, FeedbackIn, Paginated, ParticipantDetail, Payment, Plan, ParticipantRow, PublishResponse, Question, QuestionInput, TokenPair, User,
 } from "./types";
 
 export const googleLogin = (idToken: string) =>
@@ -63,3 +65,30 @@ export async function downloadResults(examId: number | string, code: string | nu
   Object.assign(document.createElement("a"), { href: url, download: `results_${code ?? examId}.xlsx` }).click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
+
+// Tarif. Backendda /billing/* hali yo'q bo'lsa (404) — vaqtinchalik soxta rejim (billingMock.ts)
+let billingMock = false;
+export const isBillingMock = () => billingMock;
+async function withMock<T>(real: () => Promise<T>, mock: () => Promise<T>): Promise<T> {
+  if (billingMock) return mock();
+  try { return await real(); }
+  catch (e) {
+    if (toApiError(e).status !== 404) throw e;
+    billingMock = true;
+    return mock();
+  }
+}
+export const getBilling = () => withMock(() => adminApi.get<BillingInfo>("/billing/me/").then(r => r.data), mock.mockGetBilling);
+export const submitPayment = (plan: Plan, receipt: File) => withMock(() => {
+  const fd = new FormData();
+  fd.append("plan", plan);
+  fd.append("receipt", receipt);
+  return adminApi.post<Payment>("/billing/payments/", fd).then(r => r.data);
+}, () => mock.mockSubmitPayment(plan, receipt));
+export const listMembers = () => withMock(() => adminApi.get<CenterMember[]>("/billing/members/").then(r => r.data), mock.mockListMembers);
+export const addMember = (email: string) => withMock(() => adminApi.post<CenterMember>("/billing/members/", { email }).then(r => r.data), () => mock.mockAddMember(email));
+export const removeMember = (id: number) => withMock(() => adminApi.delete(`/billing/members/${id}/`).then(() => undefined), () => mock.mockRemoveMember(id));
+
+export type PayProvider = "click" | "payme";
+/** Onlayn to'lov. Hozircha faqat soxta rejim — backend tayyor bo'lgach provayder checkout URL'iga yo'naltirish bilan almashtiriladi. */
+export const payOnline = (plan: Plan, provider: PayProvider) => mock.mockPayOnline(plan, provider);

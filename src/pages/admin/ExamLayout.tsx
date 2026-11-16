@@ -7,7 +7,7 @@ import type { ExamDetail, PublishResponse } from "../../api/types";
 import PublishModal from "../../components/PublishModal";
 import { toast } from "../../components/toast";
 import { useFeedbackPrompt } from "../../stores/feedback";
-import { Badge, Button, ConfirmModal, ErrorBox, FullPageSpinner, Menu, TabNav } from "../../components/ui";
+import { Badge, Button, ConfirmModal, ErrorBox, FullPageSpinner, Menu, Modal, TabNav } from "../../components/ui";
 import { copyText, fmtMinutes, fmtNum } from "../../lib/format";
 import { examDeleteText, EXAM_STATUS_HINTS, EXAM_STATUS_LABELS, EXAM_STATUS_TONES } from "../../lib/labels";
 
@@ -40,6 +40,7 @@ export default function ExamLayout() {
   const [published, setPublished] = useState<PublishResponse | null>(null);
   const [pubErrors, setPubErrors] = useState<PublishErrors | null>(null);
   const [confirm, setConfirm] = useState<Confirm>(null);
+  const [paywall, setPaywall] = useState(false);
 
   // Fikr modali kod/QR oynasini yopmasin — PublishModal yopilgach ochiladi
   useEffect(() => {
@@ -61,7 +62,8 @@ export default function ExamLayout() {
         setPubErrors(parsePublishErrors(err.details, q.data));
         toast("Nashr qilib bo'lmadi — qizil belgilangan savollarni tuzating", "error");
         nav(`/admin/exams/${id}`);
-      } else toast(err.message, "error");
+      } else if (err.code === "SUBSCRIPTION_REQUIRED") setPaywall(true);
+      else toast(err.message, "error");
     },
   });
   const action = useMutation({
@@ -151,6 +153,10 @@ export default function ExamLayout() {
         <Outlet context={{ exam, refetch, pubErrors } satisfies ExamCtx} />
       </div>
 
+      <Modal open={paywall} onClose={() => setPaywall(false)} title="Obuna kerak"
+        footer={<><Button variant="secondary" onClick={() => setPaywall(false)}>Keyinroq</Button><Button onClick={() => nav("/admin/billing")}>Tarifni tanlash</Button></>}>
+        <p className="text-ink-muted">Obuna (yoki bepul sinov) muddati tugagan. Test qoralama sifatida saqlangan — tarifni to'laganingizdan keyin nashr qilishingiz mumkin.</p>
+      </Modal>
       {published && <PublishModal open onClose={() => setPublished(null)} code={published.code} shareUrl={published.share_url} />}
       <ConfirmModal open={confirm === "close"} onClose={() => setConfirm(null)} danger title="Testni yopish"
         text="Test hozir ishlayotganlar uchun ham yakunlanadi — javoblari shu holatda topshiriladi. Yangi kirish yopiladi."
