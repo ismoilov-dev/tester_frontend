@@ -2,12 +2,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Link, Outlet, useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { archiveExam, closeExam, deleteExam, duplicateExam, getExam, publishExam } from "../../api/admin";
-import { errMsg, toApiError } from "../../api/errors";
+import { errMsg, isCode, toApiError } from "../../api/errors";
 import type { ExamDetail, PublishResponse } from "../../api/types";
+import PaywallModal from "../../components/PaywallModal";
 import PublishModal from "../../components/PublishModal";
+import { usePlans, usePremium } from "../../hooks/useBilling";
 import { toast } from "../../components/toast";
 import { useFeedbackPrompt } from "../../stores/feedback";
-import { Badge, Button, ConfirmModal, ErrorBox, FullPageSpinner, Menu, Modal, TabNav } from "../../components/ui";
+import { Badge, Button, ConfirmModal, ErrorBox, FullPageSpinner, Menu, TabNav } from "../../components/ui";
 import { copyText, fmtMinutes, fmtNum } from "../../lib/format";
 import { examDeleteText, EXAM_STATUS_HINTS, EXAM_STATUS_LABELS, EXAM_STATUS_TONES } from "../../lib/labels";
 
@@ -41,6 +43,8 @@ export default function ExamLayout() {
   const [pubErrors, setPubErrors] = useState<PublishErrors | null>(null);
   const [confirm, setConfirm] = useState<Confirm>(null);
   const [paywall, setPaywall] = useState(false);
+  const { billing, state: premium } = usePremium();
+  const plans = usePlans(paywall).data;
 
   // Fikr modali kod/QR oynasini yopmasin — PublishModal yopilgach ochiladi
   useEffect(() => {
@@ -58,11 +62,14 @@ export default function ExamLayout() {
     },
     onError: e => {
       const err = toApiError(e);
-      if (err.code === "PUBLISH_VALIDATION" && q.data) {
+      if (isCode(err, "PUBLISH_VALIDATION") && q.data) {
         setPubErrors(parsePublishErrors(err.details, q.data));
         toast("Nashr qilib bo'lmadi — qizil belgilangan savollarni tuzating", "error");
         nav(`/admin/exams/${id}`);
-      } else if (err.code === "SUBSCRIPTION_REQUIRED") setPaywall(true);
+      } else if (isCode(err, "SUBSCRIPTION_REQUIRED")) {
+        setPaywall(true);
+        qc.invalidateQueries({ queryKey: ["billing"] });
+      }
       else toast(err.message, "error");
     },
   });
@@ -153,11 +160,8 @@ export default function ExamLayout() {
         <Outlet context={{ exam, refetch, pubErrors } satisfies ExamCtx} />
       </div>
 
-      <Modal open={paywall} onClose={() => setPaywall(false)} title="Obuna kerak"
-        footer={<><Button variant="secondary" onClick={() => setPaywall(false)}>Keyinroq</Button><Button onClick={() => nav("/admin/billing")}>Tarifni tanlash</Button></>}>
-        <p className="text-ink-muted">Obuna (yoki bepul sinov) muddati tugagan. Test qoralama sifatida saqlangan — tarifni to'laganingizdan keyin nashr qilishingiz mumkin.</p>
-      </Modal>
-      {published && <PublishModal open onClose={() => setPublished(null)} code={published.code} shareUrl={published.share_url} />}
+      <PaywallModal open={paywall} onClose={() => setPaywall(false)} billing={billing} plans={plans} />
+      {published && <PublishModal open onClose={() => setPublished(null)} code={published.code} shareUrl={published.share_url} premium={!!premium?.isPremium} />}
       <ConfirmModal open={confirm === "close"} onClose={() => setConfirm(null)} danger title="Testni yopish"
         text="Test hozir ishlayotganlar uchun ham yakunlanadi — javoblari shu holatda topshiriladi. Yangi kirish yopiladi."
         confirmText="Yopish" loading={action.isPending} onConfirm={() => action.mutate("close")} />

@@ -27,15 +27,26 @@ export interface User { id: number; email: string; full_name: string; avatar_url
 // ---- Tarif (to'lov chek orqali, superadmin Django admin'da tasdiqlaydi) ----
 export type Plan = "teacher" | "center";
 export type PaymentStatus = "pending" | "approved" | "rejected";
-export interface Payment { id: number; plan: Plan; amount: number; status: PaymentStatus; admin_note: string; created_at: string; reviewed_at: string | null; }
+export interface Payment {
+  id: number; plan: Plan; amount: number;
+  /** Faqat center tarifi uchun */
+  center_name?: string;
+  status: PaymentStatus;
+  /** Rad etish sababi */
+  admin_note: string;
+  created_at: string; reviewed_at: string | null;
+}
+export interface PlanInfoApi { code: Plan; title: string; price: number; period_days: number; max_teachers: number | null; }
+export interface PayCard { number: string; holder: string; }
+export interface PlansResponse { plans: PlanInfoApi[]; card: PayCard; }
 export interface BillingInfo {
   plan: Plan; has_access: boolean;
   access_until: string | null; trial_until: string | null; paid_until: string | null;
   is_center_owner: boolean;
   center: { owner_email: string; name: string; until: string | null } | null;
   pending_payment: Payment | null; last_payment: Payment | null;
-  prices: Record<Plan, number>;
-  card: { number: string; holder: string };
+  prices: Partial<Record<Plan, number>>;
+  card: PayCard;
   max_teachers: number;
 }
 export interface CenterMember { id: number; email: string; full_name: string; added_at: string; }

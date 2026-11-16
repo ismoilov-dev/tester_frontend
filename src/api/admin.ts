@@ -1,8 +1,6 @@
-import * as mock from "./billingMock";
 import { adminApi } from "./client";
-import { toApiError } from "./errors";
 import type {
-  BillingInfo, CenterMember, Exam, ExamDetail, Feedback, FeedbackIn, Paginated, ParticipantDetail, Payment, Plan, ParticipantRow, PublishResponse, Question, QuestionInput, TokenPair, User,
+  BillingInfo, CenterMember, Exam, ExamDetail, Feedback, FeedbackIn, Paginated, ParticipantDetail, Payment, Plan, PlansResponse, ParticipantRow, PublishResponse, Question, QuestionInput, TokenPair, User,
 } from "./types";
 
 export const googleLogin = (idToken: string) =>
@@ -66,29 +64,22 @@ export async function downloadResults(examId: number | string, code: string | nu
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-// Tarif. Backendda /billing/* hali yo'q bo'lsa (404) — vaqtinchalik soxta rejim (billingMock.ts)
-let billingMock = false;
-export const isBillingMock = () => billingMock;
-async function withMock<T>(real: () => Promise<T>, mock: () => Promise<T>): Promise<T> {
-  if (billingMock) return mock();
-  try { return await real(); }
-  catch (e) {
-    if (toApiError(e).status !== 404) throw e;
-    billingMock = true;
-    return mock();
-  }
-}
-export const getBilling = () => withMock(() => adminApi.get<BillingInfo>("/billing/me/").then(r => r.data), mock.mockGetBilling);
-export const submitPayment = (plan: Plan, receipt: File) => withMock(() => {
+// Tarif (P2P): kartaga o'tkazma + chek, superadmin Django admin'da tasdiqlaydi
+export const getBilling = () => adminApi.get<BillingInfo>("/billing/me/").then(r => r.data);
+export const getPlans = () => adminApi.get<PlansResponse>("/billing/plans/").then(r => r.data);
+/** Mening to'lovlarim (yangisi birinchi) */
+export const listPayments = () =>
+  adminApi.get<Payment[] | Paginated<Payment>>("/billing/payments/").then(r => (Array.isArray(r.data) ? r.data : r.data.results ?? []));
+/** Chek yuborish. Content-Type'ni axios o'zi (boundary bilan) qo'yadi */
+export function submitPayment(plan: Plan, receipt: File, centerName?: string, onProgress?: (p: number) => void) {
   const fd = new FormData();
   fd.append("plan", plan);
   fd.append("receipt", receipt);
-  return adminApi.post<Payment>("/billing/payments/", fd).then(r => r.data);
-}, () => mock.mockSubmitPayment(plan, receipt));
-export const listMembers = () => withMock(() => adminApi.get<CenterMember[]>("/billing/members/").then(r => r.data), mock.mockListMembers);
-export const addMember = (email: string) => withMock(() => adminApi.post<CenterMember>("/billing/members/", { email }).then(r => r.data), () => mock.mockAddMember(email));
-export const removeMember = (id: number) => withMock(() => adminApi.delete(`/billing/members/${id}/`).then(() => undefined), () => mock.mockRemoveMember(id));
-
-export type PayProvider = "click" | "payme";
-/** Onlayn to'lov. Hozircha faqat soxta rejim — backend tayyor bo'lgach provayder checkout URL'iga yo'naltirish bilan almashtiriladi. */
-export const payOnline = (plan: Plan, provider: PayProvider) => mock.mockPayOnline(plan, provider);
+  if (plan === "center") fd.append("center_name", (centerName ?? "").trim());
+  return adminApi.post<Payment>("/billing/payments/", fd, {
+    onUploadProgress: e => { if (e.total) onProgress?.(e.loaded / e.total); },
+  }).then(r => r.data);
+}
+export const listMembers = () => adminApi.get<CenterMember[]>("/billing/members/").then(r => r.data);
+export const addMember = (email: string) => adminApi.post<CenterMember>("/billing/members/", { email }).then(r => r.data);
+export const removeMember = (id: number) => adminApi.delete(`/billing/members/${id}/`).then(() => undefined);

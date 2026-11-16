@@ -11,3 +11,6 @@ export function toApiError(e: any): ApiError {
 }
 
 export const errMsg = (e: unknown) => toApiError(e).message;
+
+/** Backend xato kodlari aralash registrda (not_authenticated / PAYMENT_PENDING) — registrsiz solishtiramiz */
+export const isCode = (e: unknown, code: string) => toApiError(e).code.toUpperCase() === code.toUpperCase();

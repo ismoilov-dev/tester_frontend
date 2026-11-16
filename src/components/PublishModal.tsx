@@ -1,17 +1,18 @@
 import QRCode from "qrcode";
 import { useEffect, useState } from "react";
 import { copyText } from "../lib/format";
+import Crown from "./Crown";
 import { toast } from "./toast";
-import { Button, Modal } from "./ui";
+import { Badge, Button, Modal } from "./ui";
 
-export default function PublishModal({ open, onClose, code, shareUrl }: { open: boolean; onClose: () => void; code: string; shareUrl: string }) {
+export default function PublishModal({ open, onClose, code, shareUrl, premium }: { open: boolean; onClose: () => void; code: string; shareUrl: string; premium?: boolean }) {
   const [qr, setQr] = useState("");
   useEffect(() => {
     if (open && shareUrl) QRCode.toDataURL(shareUrl, { width: 220, margin: 1 }).then(setQr).catch(() => setQr(""));
   }, [open, shareUrl]);
 
   return (
-    <Modal open={open} onClose={onClose} title="Test o'quvchilar uchun ochiq" footer={<Button variant="secondary" onClick={onClose}>Yopish</Button>}>
+    <Modal open={open} onClose={onClose} title={<span className="flex flex-wrap items-center gap-2">Test o'quvchilar uchun ochiq{premium && <Badge tone="gradient"><Crown className="h-3 w-3 text-warning" />Premium</Badge>}</span>} footer={<Button variant="secondary" onClick={onClose}>Yopish</Button>}>
       <div className="flex flex-col items-center gap-5 text-center">
         <p className="text-ink-muted">O'quvchilarga kodni ayting yoki linkni yuboring.</p>
         <div className="gradient-aurora w-full rounded-lg px-4 py-6">

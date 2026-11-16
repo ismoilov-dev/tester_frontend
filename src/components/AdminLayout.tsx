@@ -1,12 +1,22 @@
 import { useQuery } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link, Outlet, useNavigate } from "react-router-dom";
 import { logout, me } from "../api/admin";
-import { daysLeft } from "../lib/format";
+import { usePlans, usePremium } from "../hooks/useBilling";
+import { daysLeft, fmtSum } from "../lib/format";
+import { planPrice } from "../lib/plans";
 import { useAuth } from "../stores/auth";
 import { useFeedbackPrompt } from "../stores/feedback";
+import Crown from "./Crown";
 import FeedbackModal from "./FeedbackModal";
+import PayModal from "./PayModal";
+import PremiumPill from "./PremiumPill";
+import PremiumWatcher from "./PremiumWatcher";
 import { Button } from "./ui";
+
+const BANNER_KEY = "tester.premium.bannerHidden";
+function readSession(k: string) { try { return sessionStorage.getItem(k); } catch { return null; } }
+function writeSession(k: string, v: string) { try { sessionStorage.setItem(k, v); } catch { /* storage yo'q */ } }
 
 export default function AdminLayout() {
   const user = useAuth(s => s.user);
@@ -15,8 +25,13 @@ export default function AdminLayout() {
   const meQ = useQuery({ queryKey: ["me"], queryFn: me, retry: false, staleTime: 60_000 });
   const feedbackDue = meQ.data?.feedback_due;
   const isSuper = meQ.data?.role === "superadmin";
-  const left = daysLeft(meQ.data?.access_until);
-  const showBanner = meQ.data && meQ.data.has_access !== undefined && !isSuper && (!meQ.data.has_access || left <= 3);
+  const { billing, state } = usePremium();
+  const plans = usePlans(!!billing).data;
+  const left = state?.left ?? daysLeft(meQ.data?.access_until);
+  const hasAccess = billing?.has_access ?? meQ.data?.has_access;
+  const [bannerHidden, setBannerHidden] = useState(() => readSession(BANNER_KEY) === "1");
+  const showBanner = !isSuper && !bannerHidden && hasAccess !== undefined && state?.status !== "pending" && (!hasAccess || left <= 3);
+  const minPrice = fmtSum(planPrice("teacher", plans, billing));
   useEffect(() => { if (feedbackDue) useFeedbackPrompt.getState().ask(); }, [feedbackDue]);
 
   async function onLogout() {
@@ -31,34 +46,44 @@ export default function AdminLayout() {
       <header className="sticky top-0 z-30 border-b border-border bg-bg/85 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
           <Link to="/admin" className="flex items-center gap-2.5 text-[17px] font-semibold tracking-tight">
-            <span className="gradient-aurora h-7 w-7 rounded-full" />
+            <span className="gradient-aurora relative h-7 w-7 rounded-full">
+              {state?.isPremium && (
+                <span title="Premium" className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-bg shadow-sm ring-1 ring-border">
+                  <Crown className="h-2.5 w-2.5 text-warning" />
+                </span>
+              )}
+            </span>
             Tester
           </Link>
           <div className="flex items-center gap-2">
-            <Link to="/admin/premium" aria-label="Premium" title="Tariflar"
-              className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-sm font-medium transition hover:border-border-strong hover:bg-surface-100">
-              <svg aria-hidden viewBox="0 0 24 24" className="h-4 w-4 text-warning" fill="currentColor">
-                <path d="M3 7.5 7.5 11 12 4l4.5 7L21 7.5 19 18H5L3 7.5Z" />
-                <rect x="5" y="19.5" width="14" height="2" rx="1" />
-              </svg>
-              <span className="hidden sm:inline">Premium</span>
-            </Link>
+            {!isSuper && <PremiumPill state={state} />}
             <span className="hidden text-sm text-ink-muted sm:inline">{user?.full_name || user?.email}</span>
             <Button variant="ghost" size="sm" onClick={onLogout}>Chiqish</Button>
           </div>
         </div>
       </header>
       {showBanner && (
-        <Link to="/admin/billing" className="block border-b border-border bg-peach/50 px-4 py-2.5 text-center text-sm transition hover:bg-peach/70">
-          {meQ.data!.has_access
-            ? <>Obuna muddati tugashiga <b>{left} kun</b> qoldi — tarifni uzaytiring</>
-            : <>Obuna muddati tugagan: yangi testlarni nashr qilish uchun <b>tarifni to'lang</b></>}
-        </Link>
+        <div className={`flex items-center justify-center gap-3 border-b border-border px-4 py-2.5 text-sm ${hasAccess ? "bg-peach/50" : "bg-blush/50"}`}>
+          <p className="text-center">
+            {!hasAccess
+              ? <>Obuna muddati tugagan: yangi testlarni nashr qilish uchun Premium kerak. Premium {minPrice} dan.</>
+              : state?.isPremium
+                ? <>Premium tugashiga <b>{left} kun</b> qoldi.</>
+                : <>Sinov muddati <b>{left} kunda</b> tugaydi. Premium {minPrice} dan.</>}
+            {" "}
+            <Link to={state?.isPremium ? "/admin/billing" : "/admin/premium"} className="font-semibold underline underline-offset-2">
+              {state?.isPremium ? "Uzaytirish" : "Tarifni ko'rish"}
+            </Link>
+          </p>
+          <button type="button" aria-label="Yopish" className="text-ink-muted hover:text-ink"
+            onClick={() => { writeSession(BANNER_KEY, "1"); setBannerHidden(true); }}>✕</button>
+        </div>
       )}
       <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
         <Outlet />
       </main>
       <FeedbackModal />
+      {!isSuper && <><PayModal /><PremiumWatcher billing={billing} /></>}
     </div>
   );
 }

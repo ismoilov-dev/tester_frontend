@@ -72,3 +72,9 @@
 @utility gradient-lagoon { background: linear-gradient(135deg, var(--tint-mint), var(--tint-sky)); }
 
 .no-select { user-select: none; -webkit-user-select: none; }
+
+/* Premium pill: ohista "nafas olish" (motion-safe: orqali chaqiriladi) */
+@keyframes breathe {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--tint-lilac) 70%, transparent); }
+  50% { box-shadow: 0 0 0 6px color-mix(in oklab, var(--tint-lilac) 0%, transparent); }
+}

@@ -4,7 +4,10 @@ import { useNavigate } from "react-router-dom";
 import { createExam, deleteExam, duplicateExam, listExams } from "../../api/admin";
 import { errMsg } from "../../api/errors";
 import type { Exam, ExamStatus } from "../../api/types";
+import Crown from "../../components/Crown";
 import { toast } from "../../components/toast";
+import { usePremium, type PremiumState } from "../../hooks/useBilling";
+import { usePayModal } from "../../stores/payModal";
 import { Badge, Button, ConfirmModal, EmptyState, ErrorBox, FullPageSpinner, Input, Label, Menu, Modal, Segmented } from "../../components/ui";
 import { copyText, fmtMinutes } from "../../lib/format";
 import { examDeleteText, EXAM_STATUS_LABELS, EXAM_STATUS_TONES } from "../../lib/labels";
@@ -16,6 +19,36 @@ const FILTERS: { value: Filter; label: string }[] = [
 ];
 const PAGE_SIZE = 20;
 
+/** Premium yo'q bo'lsa — ixcham undov kartasi; bor bo'lsa — ingichka holat qatori */
+function PremiumStrip({ state }: { state: PremiumState | null }) {
+  const openPay = usePayModal(s => s.open);
+  if (!state || state.status === "pending") return null;
+  if (state.isPremium)
+    return (
+      <div className="mb-6 flex items-center gap-2 text-sm text-ink-muted">
+        <span className="gradient-aurora flex h-6 w-6 items-center justify-center rounded-full"><Crown className="h-3.5 w-3.5 text-warning" /></span>
+        Premium faol · <b className={state.left <= 3 ? "text-warning" : "text-ink"}>{state.left} kun</b> qoldi
+      </div>
+    );
+  return (
+    <div className="relative mb-6 overflow-hidden rounded-xl border border-border p-5">
+      <div aria-hidden className="gradient-aurora pointer-events-none absolute inset-0 opacity-35" />
+      <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center">
+        <span className="gradient-aurora flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow-md ring-4 ring-bg">
+          <Crown className="h-6 w-6 text-warning" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold">{state.status === "expired" ? "Premium ochilmagan — testlarni nashr qilib bo'lmaydi" : `Sinov muddati: ${state.left} kun qoldi`}</p>
+          <p className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-ink-muted">
+            <span>✓ Cheksiz testlar</span><span>✓ Anti-cheat kuzatuv</span><span>✓ Excel hisobotlar</span>
+          </p>
+        </div>
+        <Button onClick={() => openPay()}>Premium olish</Button>
+      </div>
+    </div>
+  );
+}
+
 export default function ExamsPage() {
   const [status, setStatus] = useState<Filter>("");
   const [page, setPage] = useState(1);
@@ -24,6 +57,7 @@ export default function ExamsPage() {
   const [toDelete, setToDelete] = useState<Exam | null>(null);
   const nav = useNavigate();
   const qc = useQueryClient();
+  const { state: premium } = usePremium();
 
   const q = useQuery({
     queryKey: ["exams", status, page],
@@ -58,6 +92,8 @@ export default function ExamsPage() {
         </div>
         <Button onClick={openNew}>Yangi test</Button>
       </div>
+
+      <PremiumStrip state={premium} />
 
       <div className="mb-6">
         <Segmented value={status} onChange={v => { setStatus(v); setPage(1); }} options={FILTERS} />

@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { downloadResults, getResults } from "../../api/admin";
+import Crown from "../../components/Crown";
 import { errMsg } from "../../api/errors";
 import { toast } from "../../components/toast";
 import { Badge, Button, EmptyState, ErrorBox, FullPageSpinner, Stat } from "../../components/ui";
@@ -47,8 +48,8 @@ export default function ResultsPage() {
         <Stat label="O'rtacha natija" value={summary.avg === null ? "—" : `${summary.avg}%`} />
         <Stat label="Qoidabuzarlik bilan" value={summary.flagged} tone={summary.flagged ? "warning" : undefined} hint="tekshirib ko'ring" />
         <div className="flex flex-col justify-center gap-2 rounded-lg border border-border px-5 py-4">
-          <Button loading={downloading} onClick={onExport}>Excel yuklab olish</Button>
-          <p className="text-center text-[13px] text-ink-subtle">.xlsx fayl</p>
+          <Button loading={downloading} onClick={onExport}><Crown className="h-4 w-4 text-warning" />Excel yuklab olish</Button>
+          <p className="text-center text-[13px] text-ink-subtle">.xlsx fayl · Premium imkoniyat</p>
         </div>
       </div>
 
